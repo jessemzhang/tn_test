@@ -12,9 +12,9 @@ We also provide two Python modules:
 - [truncated_normal.py](https://github.com/jessemzhang/tn_test/blob/master/truncated_normal.py): contains all code required to run the TN test
 - [figure_utils.py](https://github.com/jessemzhang/tn_test/blob/master/figure_utils.py): contains code used for running simulations and generating plots
 
-For a guide on using the Python modules for your own projects, please refer to [experiments_pbmc3k.ipynb](https://github.com/jessemzhang/tn_test/blob/master/experiments_pbmc3k.ipynb) and [experiments_synthetic_normal.ipynb](experiments_synthetic_normal.ipynb). We were able to run all of our experiments in [this Docker image](https://hub.docker.com/r/heatonresearch/jupyter-python-r/).
+For a tutorial on using the Python modules for your own projects, please refer to [experiments_pbmc3k.ipynb](https://github.com/jessemzhang/tn_test/blob/master/experiments_pbmc3k.ipynb) and [experiments_synthetic_normal.ipynb](experiments_synthetic_normal.ipynb). We were able to run all of our experiments in [this Docker image](https://hub.docker.com/r/heatonresearch/jupyter-python-r/).
 
-### Method
+## Method
 
-![method](https://github.com/jessemzhang/dendrosplit/blob/master/method.png)
+![method](https://github.com/jessemzhang/tn_test/blob/master/method.png)
 
