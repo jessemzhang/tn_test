@@ -1,6 +1,6 @@
 # TN test
 
-The code in this repository accompanies the experiments performed in the paper [Towards a post-clustering test for differential expression](https://www.biorxiv.org) by Zhang, Kamath, and Tse. 
+The code in this repository accompanies the experiments performed in the paper [Towards a post-clustering test for differential expression](https://www.biorxiv.org/content/early/2018/11/05/463265) by Zhang, Kamath, and Tse. 
 
 We provide the following notebooks:
 - [seurat_pbmc.ipynb](https://github.com/jessemzhang/tn_test/blob/master/seurat_pbmc.ipynb): R notebook for loading the PBMC dataset and clustering it with Seurat. Please see the Seurat [PBMC tutorial](https://satijalab.org/seurat/pbmc3k_tutorial.html) for more information
