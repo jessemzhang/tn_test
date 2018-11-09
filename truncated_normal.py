@@ -4,7 +4,7 @@ clustering test for differential expression".
 
 https://www.biorxiv.org/content/early/2018/11/05/463265
 
-Written by Jesse Min Zhang 11/8/18
+Written by Jesse Min Zhang 11/08/18
 """
 
 from __future__ import print_function
