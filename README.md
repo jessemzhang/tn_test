@@ -12,7 +12,21 @@ We also provide two Python modules:
 - [truncated_normal.py](https://github.com/jessemzhang/tn_test/blob/master/truncated_normal.py): contains all code required to run the TN test
 - [figure_utils.py](https://github.com/jessemzhang/tn_test/blob/master/figure_utils.py): contains code used for running simulations and generating plots
 
-For a tutorial on using the Python modules for your own projects, please refer to [experiments_pbmc3k.ipynb](https://github.com/jessemzhang/tn_test/blob/master/experiments_pbmc3k.ipynb) and [experiments_synthetic_normal.ipynb](experiments_synthetic_normal.ipynb). We were able to install all required R and Python packages and run all of our experiments in [this Docker image](https://hub.docker.com/r/heatonresearch/jupyter-python-r/).
+## Installation
+
+The TN test package can be installed via pip:
+
+```
+pip install truncated_normal
+```
+
+Import the package by adding the following line of code to your Python script:
+
+```
+from truncated_normal import truncated_normal as tn
+```
+
+For a tutorial on using the TN test module for your own projects, please refer to [experiments_pbmc3k.ipynb](https://github.com/jessemzhang/tn_test/blob/master/experiments_pbmc3k.ipynb) and [experiments_synthetic_normal.ipynb](experiments_synthetic_normal.ipynb). We were able to install all required R and Python packages and run all of our experiments in [this Docker image](https://hub.docker.com/r/heatonresearch/jupyter-python-r/).
 
 ## Method
 

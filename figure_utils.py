@@ -4,9 +4,9 @@ import time
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import truncated_normal as tn
 import matplotlib.pyplot as plt
 
+from truncated_normal import truncated_normal as tn
 from scipy.stats import norm, t, truncnorm, ttest_ind
 from sklearn.linear_model import LinearRegression
 from sklearn.svm import SVC
