@@ -161,7 +161,7 @@ def get_natural_params_diagonal(y, z, a,
     num_iters: max number of optimization steps
     learning_rate: learning rate for each parameter equals this value times the
         inverse of variance in corresponding entry
-    eps: if the loss changes by less than this amount, terminate early
+    eps: if the likelihood changes by less than this amount, terminate early
     verbose: whether or not to print progress
     opt_method: either 'adagrad', 'rmsprop', or None
     num_stability: for the denominator when using adagrad or rmsprop
@@ -172,7 +172,7 @@ def get_natural_params_diagonal(y, z, a,
     eta1: first natural parameter
     eta2: second natural parameter
     eta3: third naturap parameter
-    loss: vector of log loss values during training
+    likelihood: vector of log likelihood values during training
     """
 
     k = len(a)
@@ -190,7 +190,7 @@ def get_natural_params_diagonal(y, z, a,
     y2 = np.sum(y*y, 0)
     z2 = np.sum(z*z, 0)
 
-    def log_loss(eta1, eta2, eta3):
+    def log_likelihood(eta1, eta2, eta3):
         cY = -np.dot(a, eta2/eta1)/np.sqrt(np.dot(a, a/eta1))
         cZ = np.dot(a, eta3/eta1)/np.sqrt(np.dot(a, a/eta1))
         psi = nY*np.dot(eta2, eta2/eta1)/2 + nZ*np.dot(eta3, eta3/eta1)/2 + \
@@ -206,7 +206,7 @@ def get_natural_params_diagonal(y, z, a,
     if verbose:
         start = time.time()
 
-    loss = [log_loss(eta1, eta2, eta3)]
+    likelihood = [log_likelihood(eta1, eta2, eta3)]
 
     for step in range(num_iters):
         ieta1 = eta1**-1
@@ -255,20 +255,20 @@ def get_natural_params_diagonal(y, z, a,
         eta2 += learning_rate_*deta2/(np.sqrt(cache[2])+num_stability)
         eta3 += learning_rate_*deta3/(np.sqrt(cache[3])+num_stability)
 
-        loss.append(log_loss(eta1, eta2, eta3))
+        likelihood.append(log_likelihood(eta1, eta2, eta3))
 
         # check convergence
-        if np.abs(loss[-1]-loss[-2]) < eps:
+        if np.abs(likelihood[-1]-likelihood[-2]) < eps:
             break
 
         if verbose:
-            print('\r%s iterations done; loss = %.2e (%.2f s elapsed).'\
-                  %(step+1, loss[-1], time.time()-start), end='')
+            print('\r%s iterations done; likelihood = %.2e (%.2f s elapsed).'\
+                  %(step+1, likelihood[-1], time.time()-start), end='')
 
     if verbose:
         print('')
 
-    return eta1, eta2, eta3, loss
+    return eta1, eta2, eta3, likelihood
 
 
 def get_natural_params_1D(y, z, a,
@@ -291,7 +291,7 @@ def get_natural_params_1D(y, z, a,
     num_iters: max number of optimization steps
     learning_rate: learning rate for each parameter equals this value times the
         inverse of variance in corresponding entry
-    eps: if the loss changes by less than this amount, terminate early
+    eps: if the likelihood changes by less than this amount, terminate early
     verbose: whether or not to print progress
     opt_method: either 'adagrad', 'rmsprop', or None
     num_stability: for the denominator when using adagrad or rmsprop
@@ -302,7 +302,7 @@ def get_natural_params_1D(y, z, a,
     eta1: first natural parameter
     eta2: second natural parameter
     eta3: third naturap parameter
-    loss: vector of log loss values during training
+    likelihood: vector of log likelihood values during training
     """
 
     assert isinstance(a, (int, float))
@@ -319,7 +319,7 @@ def get_natural_params_1D(y, z, a,
     y2 = np.sum(y**2)
     z2 = np.sum(z**2)
 
-    def log_loss(eta1, eta2, eta3):
+    def log_likelihood(eta1, eta2, eta3):
         cY = a*np.sqrt(eta1)-eta2/np.sqrt(eta1)
         cZ = eta3/np.sqrt(eta1)-a*np.sqrt(eta1)
         psi = nY*eta2**2/(2*eta1) + nZ*eta3**2/(2*eta1) + nY*np.log(Phi(cY)) + \
@@ -335,7 +335,7 @@ def get_natural_params_1D(y, z, a,
         eta2 = np.random.randn()
         eta3 = np.random.randn()
 
-        loss = [log_loss(eta1, eta2, eta3)]
+        likelihood = [log_likelihood(eta1, eta2, eta3)]
 
         # Gradient cache
         cache = np.zeros(3)
@@ -384,23 +384,23 @@ def get_natural_params_1D(y, z, a,
             eta2 += learning_rate*deta2/(np.sqrt(cache[1])+num_stability)
             eta3 += learning_rate*deta3/(np.sqrt(cache[2])+num_stability)
 
-            loss.append(log_loss(eta1, eta2, eta3))
+            likelihood.append(log_likelihood(eta1, eta2, eta3))
 
             # check convergence
-            if np.abs(loss[-1]-loss[-2]) < eps or np.isnan(loss[-1]):
+            if np.abs(likelihood[-1]-likelihood[-2]) < eps or np.isnan(likelihood[-1]):
                 break
 
             if verbose:
                 print('\r%s/%s gradient udpates performed (%.2f s elapsed).'
                       %(step+1, num_iters, time.time()-start), end='')
 
-        if not np.isnan(loss[-1]):
+        if not np.isnan(likelihood[-1]):
             break
 
     if verbose:
         print('')
 
-    return eta1, eta2, eta3, loss
+    return eta1, eta2, eta3, likelihood
 
 
 # ------------------------------------------------------------------------------
@@ -581,7 +581,7 @@ def tn_test(y, z,
     num_iters: max number of optimization steps for maximum likelihood
     learning_rate: learning rate for each parameter equals this value times the
         inverse of variance in corresponding entry
-    eps: if the loss changes by less than this amount, terminate early
+    eps: if the likelihood changes by less than this amount, terminate early
     use_tdist: null distribution of TN statistic to use
         False for standard normal
         True for t distribution with df=len(y)+len(z)-2
