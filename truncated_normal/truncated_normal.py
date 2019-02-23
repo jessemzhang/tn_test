@@ -11,6 +11,7 @@ from __future__ import print_function
 
 import time
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.stats import norm, t
 from scipy.integrate import quad
 from sklearn.svm import SVC
@@ -74,7 +75,7 @@ def get_null_trunc_params(muL, muR, var=1, a=0):
     return muY, varY, muZ, varZ
 
 
-def get_marginals(a, muL, muR, var=None, ind=0):
+def get_marginals(a, b, muL, muR, var=None, ind=0):
     """Gets the marginal distributions of a gene given a as the truncation plane
 
        var can either be None, in which case it's set to all ones, or
@@ -94,27 +95,27 @@ def get_marginals(a, muL, muR, var=None, ind=0):
     muR_in, muR_out = muR[ind], np.delete(muR, ind)
 
     def pdfY(Y):
-        C = 1/(Phi(np.dot(-a, muL)/np.sqrt(np.sum(a**2*var)))*np.sqrt(2*np.pi*v_in))
+        C = 1/(Phi((-np.dot(a, muL)-b)/np.sqrt(np.sum(a**2*var)))*np.sqrt(2*np.pi*v_in))
         if len(a_out) == 0:
             PhiY = lambda x: 1 if x <= 0 else 0
         else:
-            PhiY = lambda x: Phi((-a_in*x-np.dot(a_out, muL_out))/np.sqrt(np.sum(a_out**2*v_out)))
+            PhiY = lambda x: Phi((-a_in*x-np.dot(a_out, muL_out)-b)/np.sqrt(np.sum(a_out**2*v_out)))
         return C*np.exp(-(Y-muL_in)**2/(2*v_in))*PhiY(Y)
 
     def pdfZ(Z):
-        C = 1/(Phi(np.dot(a, muR)/np.sqrt(np.sum(a**2*var)))*np.sqrt(2*np.pi*v_in))
+        C = 1/(Phi((np.dot(a, muR)+b)/np.sqrt(np.sum(a**2*var)))*np.sqrt(2*np.pi*v_in))
         if len(a_out) == 0:
             PhiZ = lambda x: 1 if x > 0 else 0
         else:
-            PhiZ = lambda x: Phi((a_in*x+np.dot(a_out, muR_out))/np.sqrt(np.sum(a_out**2*v_out)))
+            PhiZ = lambda x: Phi((a_in*x+np.dot(a_out, muR_out)+b)/np.sqrt(np.sum(a_out**2*v_out)))
         return C*np.exp(-(Z-muR_in)**2/(2*v_in))*PhiZ(Z)
 
     return pdfY, pdfZ
 
 
-def get_truncmv_params(a, muL, muR, var=None, ind=0):
+def get_truncmv_params(a, b, muL, muR, var=None, ind=0):
     """Gets first and second moments via numerical integration"""
-    pdfY, pdfZ = get_marginals(a, muL, muR, var=var, ind=ind)
+    pdfY, pdfZ = get_marginals(a, b, muL, muR, var=var, ind=ind)
     muY = quad(lambda x: x*pdfY(x), -np.inf, np.inf)[0]
     varY = quad(lambda x: x**2*pdfY(x), -np.inf, np.inf)[0]-muY**2
     muZ = quad(lambda x: x*pdfZ(x), -np.inf, np.inf)[0]
@@ -122,7 +123,7 @@ def get_truncmv_params(a, muL, muR, var=None, ind=0):
     return muY, varY, muZ, varZ
 
 
-def get_null_truncmv_params(a, muL, muR, var=None, ind=0):
+def get_null_truncmv_params(a, b, muL, muR, var=None, ind=0):
     """Gets first and second order moments of pdf Y, pdf Z
        assuming theta=0 (i.e. both distributions have same mean on index ind)
        (multivariate case)
@@ -130,7 +131,7 @@ def get_null_truncmv_params(a, muL, muR, var=None, ind=0):
     mu = (muL[ind]+muR[ind])/2.
     muL_, muR_ = np.array(muL), np.array(muR)
     muL_[ind], muR_[ind] = mu, mu
-    muY, varY, muZ, varZ = get_truncmv_params(a, muL_, muR_, var=var, ind=ind)
+    muY, varY, muZ, varZ = get_truncmv_params(a, b, muL_, muR_, var=var, ind=ind)
     return muY, varY, muZ, varZ
 
 
@@ -139,6 +140,7 @@ def get_null_truncmv_params(a, muL, muR, var=None, ind=0):
 # ------------------------------------------------------------------------------
 
 def get_natural_params_diagonal(y, z, a,
+                                b=0,
                                 num_iters=1000,
                                 learning_rate=0.1,
                                 eps=1e-5,
@@ -158,6 +160,7 @@ def get_natural_params_diagonal(y, z, a,
     y: points from one cluster
     z: points from the other cluster
     a: separating hyperplane
+    b: intercept term
     num_iters: max number of optimization steps
     learning_rate: learning rate for each parameter equals this value times the
         inverse of variance in corresponding entry
@@ -171,7 +174,7 @@ def get_natural_params_diagonal(y, z, a,
     ----------
     eta1: first natural parameter
     eta2: second natural parameter
-    eta3: third naturap parameter
+    eta3: third natural parameter
     likelihood: vector of log likelihood values during training
     """
 
@@ -191,8 +194,8 @@ def get_natural_params_diagonal(y, z, a,
     z2 = np.sum(z*z, 0)
 
     def log_likelihood(eta1, eta2, eta3):
-        cY = -np.dot(a, eta2/eta1)/np.sqrt(np.dot(a, a/eta1))
-        cZ = np.dot(a, eta3/eta1)/np.sqrt(np.dot(a, a/eta1))
+        cY = (-np.dot(a, eta2/eta1)-b)/np.sqrt(np.dot(a, a/eta1))
+        cZ = (np.dot(a, eta3/eta1)+b)/np.sqrt(np.dot(a, a/eta1))
         psi = nY*np.dot(eta2, eta2/eta1)/2 + nZ*np.dot(eta3, eta3/eta1)/2 + \
             nY*np.log(Phi(cY)) + nZ*np.log(Phi(cZ)) + (nY+nZ)*np.sum(np.log(1/eta1))/2
         return -0.5*np.dot(eta1, y2+z2) + np.dot(eta2, y1) + np.dot(eta3, z1) - psi
@@ -211,8 +214,8 @@ def get_natural_params_diagonal(y, z, a,
     for step in range(num_iters):
         ieta1 = eta1**-1
         sigma = np.sqrt(np.dot(a, ieta1*a))
-        cY = np.dot(-a, ieta1*eta2)/sigma
-        cZ = np.dot(a, ieta1*eta3)/sigma
+        cY = (-np.dot(a, ieta1*eta2)-b)/sigma
+        cZ = (np.dot(a, ieta1*eta3)+b)/sigma
 
         # gradient updates
         deta2 = y1 - nY*ieta1*eta2 + nY*phi(cY)*ieta1*a/(sigma*Phi(cY)+num_stability)
@@ -221,9 +224,9 @@ def get_natural_params_diagonal(y, z, a,
         if var is None:
             dphi1 = nY*eta2*eta2 + nZ*eta3*eta3 + (nY+nZ)*eta1 \
                     - nY*(phi(cY)/(Phi(cY)+num_stability))* \
-                      (2*a*eta2/sigma - np.dot(a, ieta1*eta2)/sigma**3*a**2) \
+                      (2*a*eta2/sigma - (np.dot(a, ieta1*eta2)+b)/sigma**3*a**2) \
                     - nZ*(phi(cZ)/(Phi(cZ)+num_stability))* \
-                      (np.dot(a, ieta1*eta3)/sigma**3*a**2 - 2*a*eta3/sigma)
+                      ((np.dot(a, ieta1*eta3)+b)/sigma**3*a**2 - 2*a*eta3/sigma)
             deta1 = -y2 - z2 + ieta1*dphi1*ieta1
             deta1 /= 2.
 
@@ -301,7 +304,7 @@ def get_natural_params_1D(y, z, a,
     ----------
     eta1: first natural parameter
     eta2: second natural parameter
-    eta3: third naturap parameter
+    eta3: third natural parameter
     likelihood: vector of log likelihood values during training
     """
 
@@ -407,7 +410,7 @@ def get_natural_params_1D(y, z, a,
 # Compute corrected p value
 # ------------------------------------------------------------------------------
 
-def get_p_val(y, z, a, muL, muR, var, ind=0, use_tdist=False):
+def get_p_val(y, z, a, b, muL, muR, var, ind=0, use_tdist=False):
     """
     Correct pval approach using approximations of truncated Gaussians
 
@@ -426,7 +429,7 @@ def get_p_val(y, z, a, muL, muR, var, ind=0, use_tdist=False):
     ----------
     pvalue
     """
-    muY, varY, muZ, varZ = get_null_truncmv_params(a, muL, muR, var=var, ind=ind)
+    muY, varY, muZ, varZ = get_null_truncmv_params(a, b, muL, muR, var=var, ind=ind)
     nY, nZ = len(y), len(z)
     stat = (np.sum(z[:, ind])-np.sum(y[:, ind])-(nZ*muZ-nY*muY))/np.sqrt(nY*varY+nZ*varZ)
     if use_tdist:
@@ -476,9 +479,8 @@ def get_p_val_1D(y, z, a, muL, muR, var, use_tdist=False):
 def split_and_est_a(y, z,
                     verbose=False,
                     split_prop=0.5,
-                    zero_mean=True,
-                    method='linear',
-                    C=100):
+                    C=100,
+                    return_consistency=False):
     """
     Given samples from two clusters, merge them into one dataset, then split that
     dataset into dataset 1 and dataset 2. Use dataset 1 to estimate a separating
@@ -490,14 +492,14 @@ def split_and_est_a(y, z,
     y: points from one cluster
     z: points from the other cluster
     split_prop: proportion of samples to put into dataset 1
-    zero_mean: whether or not to zero-mean dataset 1 and dataset 2
-    method: either 'linear' or 'svm'
     C: tolerance parameter for svm
+    return_consistency: whether or not to return how consistent fitted 
+        hyperplane labels are with original ones (for dataset2)
 
     Returns
     ----------
     y: dataset 2 samples from cluster 1 after relabeling
-    z: dataset 2 sampels from cluster 2 after relabeling
+    z: dataset 2 samples from cluster 2 after relabeling
     a: hyperplane estimated from dataset 1
     """
 
@@ -506,7 +508,7 @@ def split_and_est_a(y, z,
 
     data = np.vstack((y, z))
     labels = np.hstack((np.zeros(len(y)), np.ones(len(z))))
-
+    
     # Split dataset in half
     inds1 = np.zeros(len(data)).astype(bool)
     samp = np.sort(np.random.choice(range(len(data)), int(len(data)*split_prop), replace=False))
@@ -515,46 +517,46 @@ def split_and_est_a(y, z,
     labels1 = labels[inds1]
     data2 = data[~inds1]
     labels2true = labels[~inds1]
-    if zero_mean:
-        data1 -= np.mean(data1, 0)
-        data2 -= np.mean(data2, 0)
 
     # Use first half to fit hyperplane, assign labels to second half
-    if method == 'linear':
-        lr = LinearRegression(fit_intercept=False)
-        lr.fit(data1, labels1)
-        a = lr.coef_.reshape(-1)
-        labels2 = (np.dot(data2, a) > 0).astype(int)
-
-    elif method == 'svm':
-        svm = SVC(kernel='linear', C=C)
-        svm.fit(data1, labels1)
-        a = svm.coef_.reshape(-1)
-        labels2 = svm.predict(data2)
+    svm = SVC(kernel='linear', C=C)
+    svm.fit(data1, labels1)
+    a = svm.coef_.reshape(-1)
+    b = svm.intercept_
+    labels2 = svm.predict(data2)
 
     y = data2[labels2 == 0]
     z = data2[labels2 == 1]
+    consistency = np.sum(labels2 == labels2true)/float(len(labels2))
     if verbose:
         print('Labels assigned.. (%.2f s elapsed)'%(time.time()-start))
         print('Consistency of new labels with old: %.3f'\
-              %(np.sum(labels2 == labels2true)/float(len(labels2))))
+              %(consistency))
 
-    return y, z, a
+    if return_consistency:
+        return y, z, a, b, consistency
+    
+    return y, z, a, b
 
 
 def tn_test(y, z,
             a=None,
+            b=0,
+            C=100,
             genes_to_test=None,
             var=None,
             verbose=False,
             return_split=False,
             split_prop=0.5,
             zero_mean=True,
-            method='svm',
             num_iters=100000,
             learning_rate=0.1,
             eps=1e-5,
-            use_tdist=False):
+            use_tdist=False,
+            plot_likelihood=False,
+            return_likelihood=False,
+            return_hyperplane=False,
+            return_consistency=False):
     """
     The TN test as described in
     https://www.biorxiv.org/content/early/2018/11/05/463265.
@@ -569,6 +571,8 @@ def tn_test(y, z,
     y: points from one cluster
     z: points from the other cluster
     a: separating hyperplane. estimated via data splitting if not given
+    b: an intercept for the linear separator
+    C: tolerance parameter for svm
     genes_to_test: list of the entries to run the test for. If not given, just
         test each of them (genes_to_test = range(a))
     var: if variance is given, do not update eta1 during optimization
@@ -576,8 +580,6 @@ def tn_test(y, z,
     return_split: whether or not to return the y's and z's after data splitting
         and relabeling (a should be None else the input y, z will be returned)
     split_prop: proportion of samples to put into dataset 1
-    zero_mean: whether or not to zero-mean dataset 1 and dataset 2
-    method: either 'linear' or 'svm'
     num_iters: max number of optimization steps for maximum likelihood
     learning_rate: learning rate for each parameter equals this value times the
         inverse of variance in corresponding entry
@@ -585,6 +587,11 @@ def tn_test(y, z,
     use_tdist: null distribution of TN statistic to use
         False for standard normal
         True for t distribution with df=len(y)+len(z)-2
+    plot_likelihood: if true, generates plot of likelihood during optimization
+    return_likelihood: if true, return the likelihood value being tracked
+    return_hyperplane: if true, return the estimated separating hyperplane
+    return_consistency: whether or not to return how consistent fitted 
+        hyperplane labels are with original ones (for dataset2)
 
     Returns
     ----------
@@ -596,42 +603,103 @@ def tn_test(y, z,
         start = time.time()
 
     if a is None:
-        y, z, a = split_and_est_a(y, z,
-                                  verbose=verbose,
-                                  split_prop=split_prop,
-                                  zero_mean=zero_mean,
-                                  method=method)
+        print("""
+        WARNING: we recommend providing hyperplane a after running the clustering 
+        algorithm on only the first half of the dataset. If a is not provided, this
+        function randomly splits the datasets (see split_and_est_a()). Going this 
+        route technically is not correct since the points in the second half were 
+        used to cluster the points in the first half.
+        
+        If the clustering assignments of the pre-split dataset are known (e.g. for 
+        synthetic data), then this shouldn't be an issue.
+        """)
+        if return_consistency:
+            y, z, a, b, consistency = split_and_est_a(y, z, C=C, verbose=verbose,
+                                                      split_prop=split_prop,
+                                                      return_consistency=True)
+        else:
+            y, z, a, b = split_and_est_a(y, z, C=C, verbose=verbose, split_prop=split_prop)
 
     if genes_to_test is None:
         genes_to_test = range(len(a))
 
+    # Remove genes with 0 variance across cells
+    remove_inds = np.var(np.vstack((y, z)), 0) == 0
+    y_out = np.array(y)
+    z_out = np.array(z)
+    y = y[:, ~remove_inds]
+    z = z[:, ~remove_inds]
+    a = a[~remove_inds]
+    
+    if var is not None:
+        var = var[~remove_inds]
+    
     if verbose:
         print('Number of genes with 0 variance across cells: %s'\
-              %(np.sum(np.var(np.vstack((y, z)), 0) == 0)))
-
-    eta1, eta2, eta3, _ = get_natural_params_diagonal(y, z, a,
-                                                      var=var,
-                                                      num_iters=num_iters,
-                                                      learning_rate=learning_rate,
-                                                      verbose=verbose,
-                                                      eps=eps)
+              %(np.sum(remove_inds)))
+        
+    # Remap genes to test
+    d = {}
+    for i, remove in enumerate(remove_inds):
+        if not remove:
+            d[i] = len(d)
+    genes_to_test_filt = [d[i] for i in genes_to_test if i in d]
+    
+    eta1, eta2, eta3, likelihood = get_natural_params_diagonal(y, z, a, b=b,
+                                                               var=var,
+                                                               num_iters=num_iters,
+                                                               learning_rate=learning_rate,
+                                                               verbose=verbose,
+                                                               eps=eps)
     var_hat = eta1**-1
     muL_hat = var_hat*eta2
     muR_hat = var_hat*eta3
 
+    if plot_likelihood:
+        plt.figure()
+        plt.plot(likelihood)
+        plt.xlabel('log likelihood')
+        plt.ylabel('iteration')
+        plt.show()
 
-    p_tn = np.zeros(len(genes_to_test))
-    for i, j in enumerate(genes_to_test):
-        p_tn[i] = get_p_val(y, z, a, muL_hat, muR_hat, var_hat,
+    p_tn = np.zeros(len(genes_to_test_filt))
+    for i, j in enumerate(genes_to_test_filt):
+        p_tn[i] = get_p_val(y, z, a, b, muL_hat, muR_hat, var_hat,
                             ind=j, use_tdist=use_tdist)
         if verbose:
             print('\r%s/%s genes tested (%.2f s elapsed)'\
-                  %(i+1, len(genes_to_test), time.time()-start), end='')
+                  %(i+1, len(genes_to_test_filt), time.time()-start), end='')
+            
+    # Add in removed genes due to having 0 var
+    j = 0
+    p_tn_out = np.ones(len(genes_to_test))
+    a_out = np.zeros(len(genes_to_test))
+    for i in range(len(genes_to_test)):
+        if genes_to_test[i] in d:
+            p_tn_out[i] = p_tn[j]
+            a_out[i] = a[j]
+            j += 1
 
     if verbose:
         print('')
 
-    if return_split:
-        return p_tn, y, z
+    output = [p_tn_out]
 
-    return p_tn
+    if return_split:
+        output.append(y_out)
+        output.append(z_out)
+
+    if return_likelihood:
+        output.append(likelihood)
+        
+    if return_hyperplane:
+        output.append(a_out)
+        output.append(b)
+        
+    if return_consistency:
+        output.append(consistency)
+
+    if len(output) == 1:
+        return p_tn_out
+    
+    return output

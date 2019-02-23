@@ -24,7 +24,7 @@ def samp_diag_norm(mu, Cov, n=1):
     return samp
 
 
-def truncnormmv(mu, Cov, a, m):
+def truncnormmv(mu, Cov, a, b, m):
     """Sample from multivariate truncated normal (MC approach)
        (diagonal covariance case)
     """
@@ -32,13 +32,13 @@ def truncnormmv(mu, Cov, a, m):
     i = 0
     while i < m:
         samp = samp_diag_norm(mu, Cov)
-        if np.dot(samp, a) > 0:
+        if np.dot(samp, a) + b > 0:
             samps[i] = samp[0]
             i += 1
     return samps
 
 
-def simulate_hyperplane(muL, muR, Cov, nY, nZ, zero_mean=False, method='linear'):
+def simulate_hyperplane(muL, muR, Cov, nY, nZ):
     """
     Finds a hyperplane by sampling from a multivariate normal distribution 
     based on muL, muR (diagonal covariance)
@@ -51,27 +51,17 @@ def simulate_hyperplane(muL, muR, Cov, nY, nZ, zero_mean=False, method='linear')
     labels = np.hstack((np.array([-1 for i in range(nY)]),
                         np.array([1 for i in range(nZ)])))
     
-    # Zero-mean features (since we're not fitting an intercept)
-    if zero_mean:
-        mean = np.mean(data, 0)
-        data -= mean
-    
     # Get a separating hyperplane
-    if method == 'linear':
-        lr = LinearRegression(fit_intercept=False)
-        lr.fit(data, labels)
-        a = lr.coef_.reshape(-1)
-        
-    else:
-        svm = SVC(kernel='linear', C=100.)
-        svm.fit(data, labels)
-        a = svm.coef_.reshape(-1)
+    svm = SVC(kernel='linear', C=100.)
+    svm.fit(data, labels)
+    a = svm.coef_.reshape(-1)
+    b = svm.intercept_[0]
 
-    return y, z, a
+    return y, z, a, b
 
 
-def run_simulation(muL, muR, Cov, nY=49, nZ=55, num_sims=100, method='linear',
-                   a_init=None, split_prop=0.5, zero_mean=True, eps=1e-3, verbose=False):
+def run_simulation(muL, muR, Cov, nY=49, nZ=55, num_sims=100,
+                   a_init=None, b_init=0, split_prop=0.5, eps=1e-3, verbose=False):
     
     k = len(muL)
     curves = {
@@ -86,29 +76,29 @@ def run_simulation(muL, muR, Cov, nY=49, nZ=55, num_sims=100, method='linear',
     for i in range(num_sims):
         
         if a_init is None:
-            _, _, a = simulate_hyperplane(muL, muR, Cov, nY, nZ)
+            _, _, a, b = simulate_hyperplane(muL, muR, Cov, nY, nZ)
         else:
             a = a_init
+            b = b_init
 
-        y = truncnormmv(muL, Cov, -a, nY)
-        z = truncnormmv(muR, Cov, a, nZ)
+        y = truncnormmv(muL, Cov, -a, -b, nY)
+        z = truncnormmv(muR, Cov, a, b, nZ)
 
         curves['T test'][i] = ttest_ind(y, z)[1]
-        curves['TN test (var known, a given)'][i] = tn.tn_test(y, z, a=a, var=Cov, 
-                                                               eps=eps, method=method,
+        curves['TN test (var known, a given)'][i] = tn.tn_test(y, z, a=a, b=b,
+                                                               var=Cov, 
+                                                               eps=eps,
                                                                verbose=verbose)
-        curves['TN test (var unknown, a given)'][i] = tn.tn_test(y, z, a=a, 
-                                                                 eps=eps, method=method,
+        curves['TN test (var unknown, a given)'][i] = tn.tn_test(y, z, a=a, b=b,
+                                                                 eps=eps,
                                                                  verbose=verbose)
-        curves['TN test (var known, a estimated)'][i] = tn.tn_test(y, z, var=Cov, 
-                                                                   split_prop=split_prop, 
-                                                                   zero_mean=zero_mean,
-                                                                   eps=eps, method=method,
+        curves['TN test (var known, a estimated)'][i] = tn.tn_test(y, z, var=Cov,
+                                                                   split_prop=split_prop,
+                                                                   eps=eps,
                                                                    verbose=verbose)
-        curves['TN test (var unknown, a estimated)'][i] = tn.tn_test(y, z, 
+        curves['TN test (var unknown, a estimated)'][i] = tn.tn_test(y, z,
                                                                      split_prop=split_prop,
-                                                                     zero_mean=zero_mean,
-                                                                     eps=eps, method=method,
+                                                                     eps=eps,
                                                                      verbose=verbose)
         
         print('\r%s/%s simulations done (%.2f s elapsed).'\
@@ -160,7 +150,7 @@ def run_simulation_1D(a, muL, muR, var, nY=49, nZ=55, num_sims=100):
 # For visualization
 # ------------------------------------------------------------------------------
 
-def plot_labels_legend(x1, x2, Y, overlay=False, legend=True):
+def plot_labels_legend(x1, x2, Y, overlay=False, legend=True, add_counts=False):
     if overlay:
         for i, label in enumerate(np.unique(Y)):
             plt.scatter(x1[Y == i], x2[Y == i], label=i, alpha=0.5, s=10)
@@ -171,7 +161,8 @@ def plot_labels_legend(x1, x2, Y, overlay=False, legend=True):
                          size=20, weight='bold', color='k') 
     else:
         for i in np.unique(Y):
-            plt.plot(x1[Y == i], x2[Y == i], '.', label=i)
+            plt.plot(x1[Y == i], x2[Y == i], '.', label=i if not add_counts 
+                     else r'%s ($n$ = %s)'%(i, np.sum(Y==i)))
     if legend: plt.legend()
 
 
