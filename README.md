@@ -8,12 +8,11 @@ We provide the following notebooks:
 - [experiments_pbmc3k.ipynb](https://github.com/jessemzhang/tn_test/blob/master/experiments/experiments_pbmc3k.ipynb): Python 3 notebook with TN test experiments performed on PBMC data processed by [seurat_pbmc.ipynb](https://github.com/jessemzhang/tn_test/blob/master/seurat_pbmc.ipynb)
 - [experiments_kolodziejczyk.ipynb](https://github.com/jessemzhang/tn_test/blob/master/experiments/experiments_kolodziejczyk.ipynb): Python 3 notebook with TN test experiments performed on the mESC dataset published by Kolodzieczyk et al. ([paper](http://www.sciencedirect.com/science/article/pii/S193459091500418X?via%3Dihub), [data](https://github.com/BatzoglouLabSU/SIMLR/tree/SIMLR/data))
 - [experiments_synthetic_normal.ipynb](https://github.com/jessemzhang/tn_test/blob/master/experiments/experiments_synthetic_normal.ipynb): Python 3 notebook with TN test experiments performed on the mouse brain cell dataset published by Zeisel et al. ([paper](http://science.sciencemag.org/content/347/6226/1138.full), [data](http://linnarssonlab.org/cortex/))
-- [figure_utils.py](https://github.com/jessemzhang/tn_test/blob/master/experiments/figure_utils.py): Python 3 notebook for preparing the results from the other notebooks for presentation in the manuscript
 - Please see the [linear_separability](https://github.com/jessemzhang/tn_test/tree/master/experiments/linear_separability) directory for experiments showing that several published single-cell datasets are linearly separable
 
 We also provide two Python modules:
 - [truncated_normal.py](https://github.com/jessemzhang/tn_test/blob/master/truncated_normal.py): contains all code required to run the TN test
-- [figure_utils.py](https://github.com/jessemzhang/tn_test/blob/master/figure_utils.py): contains code used for running simulations and generating plots
+- [figure_utils.py](https://github.com/jessemzhang/tn_test/blob/master/experiments/figure_utils.py): contains code used for running simulations and generating plots
 
 ## Installation
 
