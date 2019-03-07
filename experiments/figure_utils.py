@@ -166,12 +166,13 @@ def plot_labels_legend(x1, x2, Y, overlay=False, legend=True, add_counts=False):
     if legend: plt.legend()
 
 
-def plot_stacked_hist(v0, v1, title=None):
+def plot_stacked_hist(v0, v1, title=None, label=None):
     """Plot two histograms on top of one another"""
+    if label is None: label = ['0','1']
     bins = np.histogram(np.hstack((v0, v1)), bins=20)[1]
     data = [v0, v1]
-    plt.hist(data, bins, label=['0','1'], alpha=0.8, color=['r','g'],
-             density=True, edgecolor='none')
+    plt.hist(data, bins, label=label, alpha=0.8, color=['#1f77b4','#ff7f0e'],
+             density=True, edgecolor='none', rwidth=1.)
     if title is not None: plt.title(title)
         
 
