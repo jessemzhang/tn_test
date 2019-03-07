@@ -20,7 +20,7 @@ from truncated_normal import truncated_normal as tn
 
 For a tutorial on using the TN test module and framework for your own projects, please refer to [tntest_tutorial.ipynb](https://github.com/jessemzhang/tn_test/blob/master/tntest_tutorial.ipynb). We were able to install all required R and Python packages and run all of our experiments in [this Docker image](https://hub.docker.com/r/heatonresearch/jupyter-python-r/).
 
-We provide the following notebooks:
+We also provide the following notebooks for reproducing results in the paper:
 - [seurat_pbmc.ipynb](https://github.com/jessemzhang/tn_test/blob/master/seurat_pbmc.ipynb): R notebook for loading the PBMC dataset and clustering it with Seurat. Please see the Seurat [PBMC tutorial](https://satijalab.org/seurat/pbmc3k_tutorial.html) for more information
 - [experiments_synthetic_normal.ipynb](https://github.com/jessemzhang/tn_test/blob/master/experiments/experiments_synthetic_normal.ipynb): Python 3 notebook with TN test experiments performed on synthetic data
 - [experiments_pbmc3k.ipynb](https://github.com/jessemzhang/tn_test/blob/master/experiments/experiments_pbmc3k.ipynb): Python 3 notebook with TN test experiments performed on PBMC data processed by [seurat_pbmc.ipynb](https://github.com/jessemzhang/tn_test/blob/master/seurat_pbmc.ipynb)
