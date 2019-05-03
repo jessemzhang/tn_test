@@ -1,6 +1,6 @@
 # TN test
 
-The code in this repository accompanies the experiments performed in the paper [Towards a post-clustering test for differential expression](https://www.biorxiv.org/content/early/2018/11/05/463265) by Zhang, Kamath, and Tse. 
+The code in this repository accompanies the experiments performed in the paper [Valid post-clustering differential analysis for single-cell RNA-Seq](https://www.biorxiv.org/content/10.1101/463265v2) by Zhang, Kamath, and Tse. 
 
 ## Installation
 
