@@ -150,10 +150,10 @@ def run_simulation_1D(a, muL, muR, var, nY=49, nZ=55, num_sims=100):
 # For visualization
 # ------------------------------------------------------------------------------
 
-def plot_labels_legend(x1, x2, Y, overlay=False, legend=True, add_counts=False):
+def plot_labels_legend(x1, x2, Y, overlay=False, legend=True, add_counts=False, s=10):
     if overlay:
         for i, label in enumerate(np.unique(Y)):
-            plt.scatter(x1[Y == i], x2[Y == i], label=i, alpha=0.5, s=10)
+            plt.scatter(x1[Y == i], x2[Y == i], label=i, alpha=0.5, s=s)
             plt.annotate(label, 
                          [np.mean(x1[Y == i]), np.mean(x2[Y == i])],
                          horizontalalignment='center',
@@ -161,18 +161,27 @@ def plot_labels_legend(x1, x2, Y, overlay=False, legend=True, add_counts=False):
                          size=20, weight='bold', color='k') 
     else:
         for i in np.unique(Y):
-            plt.plot(x1[Y == i], x2[Y == i], '.', label=i if not add_counts 
-                     else r'%s ($n$ = %s)'%(i, np.sum(Y==i)))
+            plt.scatter(x1[Y == i], x2[Y == i], label=i if not add_counts 
+                     else r'%s ($n$ = %s)'%(i, np.sum(Y==i)), s=s, edgecolors='w')
     if legend: plt.legend()
 
 
-def plot_stacked_hist(v0, v1, title=None, label=None):
+def plot_stacked_hist(v0, v1, hide_0=False, hide_1=False, title=None, label=None, nbins=20, rwidth=1):
     """Plot two histograms on top of one another"""
     if label is None: label = ['0','1']
-    bins = np.histogram(np.hstack((v0, v1)), bins=20)[1]
-    data = [v0, v1]
-    plt.hist(data, bins, label=label, alpha=0.8, color=['#1f77b4','#ff7f0e'],
-             density=True, edgecolor='none', rwidth=1.)
+    bins = np.histogram(np.hstack((v0, v1)), bins=nbins)[1]
+    if hide_1:
+        data = [v0]
+        color = ['#1f77b4']
+    elif hide_0:
+        data = [v1]
+        color = ['#d62728']
+    else:
+        data = [v0, v1]
+        color = ['#1f77b4','#d62728']
+
+    plt.hist(data, bins, label=label, alpha=0.8, color=color,
+             density=True, edgecolor='none', rwidth=rwidth)
     if title is not None: plt.title(title)
         
 
@@ -243,14 +252,14 @@ def plot_1D(y, z, a):
     plt.tight_layout()
 
     
-def plot_2D(a, y, z, ylim=(-3, 3), muL=None, muR=None, s=None, legend=True):
+def plot_2D(a, y, z, b=0, ylim=(-3, 3), muL=None, muR=None, s=None, legend=True):
     a_orth = np.array(np.flipud(a))
     a_orth[0] *= -1
     plt.scatter(y[:, 0], y[:, 1], label='y', s=s)
     plt.scatter(z[:, 0], z[:, 1], label='z', s=s)
     tx = np.linspace(np.min((np.min(y[:, 0]), np.min(z[:, 0]))),
                      np.max((np.max(y[:, 0]), np.max(z[:, 0]))), 3)
-    plt.plot(tx, a_orth[1]/a_orth[0]*tx, '--', c='k', label='a')
+    plt.plot(tx, a_orth[1]/a_orth[0]*tx+b/a_orth[0], '--', c='k', label='a')
     if muL is not None:
         plt.scatter(muL[0], muL[1], s=100, c='k', edgecolors='w')
     if muR is not None:
