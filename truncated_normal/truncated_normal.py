@@ -12,6 +12,7 @@ from __future__ import print_function
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+from joblib import Parallel, delayed
 from scipy.stats import norm, t
 from scipy.integrate import quad
 from sklearn.svm import SVC
@@ -555,7 +556,8 @@ def tn_test(y, z,
             plot_likelihood=False,
             return_likelihood=False,
             return_hyperplane=False,
-            return_consistency=False):
+            return_consistency=False,
+            num_cores=1):
     """
     The TN test as described in
     https://www.biorxiv.org/content/early/2018/11/05/463265.
@@ -591,6 +593,7 @@ def tn_test(y, z,
     return_hyperplane: if true, return the estimated separating hyperplane
     return_consistency: whether or not to return how consistent fitted 
         hyperplane labels are with original ones (for dataset2)
+    num_cores: number of workers to parallelize on
 
     Returns
     ----------
@@ -661,13 +664,14 @@ def tn_test(y, z,
         plt.ylabel('iteration')
         plt.show()
 
-    p_tn = np.zeros(len(genes_to_test_filt))
-    for i, j in enumerate(genes_to_test_filt):
-        p_tn[i] = get_p_val(y, z, a, b, muL_hat, muR_hat, var_hat,
-                            ind=j, use_tdist=use_tdist)
-        if verbose:
-            print('\r%s/%s genes tested (%.2f s elapsed)'\
-                  %(i+1, len(genes_to_test_filt), time.time()-start), end='')
+    def processInput(i):
+        y, z, a, b, muL_hat, muR_hat, var_hat, j, use_tdist = i
+        return get_p_val(y, z, a, b, muL_hat, muR_hat, var_hat,
+                         ind=j, use_tdist=use_tdist)
+
+    inputs = [(y, z, a, b, muL_hat, muR_hat, var_hat, j, use_tdist)
+              for j in genes_to_test_filt]
+    p_tn = Parallel(n_jobs=num_cores, verbose=verbose)(delayed(processInput)(i) for i in inputs)
             
     # Add in removed genes due to having 0 var
     j = 0
